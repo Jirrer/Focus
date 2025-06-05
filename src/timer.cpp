@@ -5,20 +5,36 @@
 #include <string>
 #include <mutex>
 #include <atomic>
+#include <deque>
+#include <algorithm>
 
 using namespace std;
 
 int IDLE_TIME = 0;
 int TIMER_TIME = 0;
-int IDLE_THRESHOLD = 300;
-int TIMER_THRESHOLD = 1200;
-
-atomic<int> latestGPUUsage(0);
-mutex coutMutex;
+int IDLE_THRESHOLD = 90; // 90
+int TIMER_THRESHOLD = 1200; // 1200
+int GPU_RANGED_0_30 = 1;
 
 PROCESS_INFORMATION pi;
 
 const char* PIPE_NAME = R"(\\.\pipe\GPUUsagePipe)";
+
+std::atomic<int> latestGPUUsage(0);
+
+int getLatestGPUUsage() {
+    return latestGPUUsage.load();
+}
+
+void updateGPU(int value) {
+    if (value <= 1) { --GPU_RANGED_0_30; }
+    else { ++GPU_RANGED_0_30; }
+
+    GPU_RANGED_0_30 = max(0, min(30, GPU_RANGED_0_30));
+    
+}
+
+std::mutex coutMutex;
 
 void checkGPUUsage() {
     while (true) {
@@ -47,14 +63,24 @@ void checkGPUUsage() {
             DWORD bytesRead;
             while (ReadFile(hPipe, buffer, sizeof(buffer) - 1, &bytesRead, NULL) && bytesRead != 0) {
                 buffer[bytesRead] = '\0'; // null terminate
+                std::string str(buffer);
+                // Trim whitespace
+                str.erase(0, str.find_first_not_of(" \t\r\n"));
+                str.erase(str.find_last_not_of(" \t\r\n") + 1);
                 try {
-                    int value = stoi(buffer);
-                    latestGPUUsage.store(value);
+                    if (!str.empty() && std::all_of(str.begin(), str.end(), ::isdigit)) {
+                        int value = stoi(str);
+                        latestGPUUsage.store(value);
 
-                    lock_guard<mutex> lock(coutMutex);
+                        updateGPU(value);
+
+                    } else {
+                        lock_guard<mutex> lock(coutMutex);
+                    }
                 }
                 catch (...) {
                     lock_guard<mutex> lock(coutMutex);
+                    cout << "Failed to parse GPU usage value: '" << str << "'" << endl;
                 }
             }
         } else {
@@ -73,12 +99,21 @@ void checkIdle() {
     if (GetLastInputInfo(&lii)) {
         DWORD currentTime = GetTickCount();
         DWORD idleTime = currentTime - lii.dwTime;
-
-        if (idleTime >= 1000) { ++IDLE_TIME; }
+        
+        if (idleTime >= 1000) { ++IDLE_TIME;}
         else { IDLE_TIME = 0; }
-
-        ++TIMER_TIME;
     }
+    
+    bool GPU_running = true;
+
+    if (GPU_RANGED_0_30 < 20) {
+        GPU_running = false;
+    }
+    
+
+
+    if (GPU_running || IDLE_TIME <= IDLE_THRESHOLD) { ++TIMER_TIME; }
+    else {TIMER_TIME = 0; }
 }
 
 void resetTimer() {
@@ -100,10 +135,16 @@ void instatiateMonitorGPU() {
     STARTUPINFOW si = { sizeof(si) };
     PROCESS_INFORMATION piLocal = {};
 
-    // Use wide string for the command
-    wchar_t cmd[] = L"powershell.exe -ExecutionPolicy Bypass -File monitorGPU.ps1";
+    wchar_t exePath[MAX_PATH];
+    GetModuleFileNameW(NULL, exePath, MAX_PATH);
 
-    if (!CreateProcessW(nullptr, cmd, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+    std::wstring exeDir(exePath);
+    exeDir = exeDir.substr(0, exeDir.find_last_of(L"\\/"));
+    std::wstring ps1Path = exeDir + L"\\monitorGPU.ps1";
+
+    std::wstring cmd = L"powershell.exe -ExecutionPolicy Bypass -File \"" + ps1Path + L"\"";
+
+    if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
         std::wcerr << L"Failed to start PowerShell script." << std::endl;
     }
 }
@@ -135,15 +176,18 @@ int main() {
     thread pipeThread(checkGPUUsage);
     pipeThread.detach();
 
-    // Example main loop to use latestGPUUsage
+    std::cout.sync_with_stdio(true);
+    std::cout << std::unitbuf; // unbuffered output
+
     while (true) {
         checkIdle();
 
-        int gpuUsage = latestGPUUsage.load();
+        int gpuUsage = getLatestGPUUsage();
 
         {
             lock_guard<mutex> lock(coutMutex);
             cout << "Current GPU Usage: " << gpuUsage << "%" << endl;
+            cout << "GPU Count: " << GPU_RANGED_0_30 << endl;
             cout << "Idle Time: " << IDLE_TIME << "s" << endl;
             cout << "Running Time: " << TIMER_TIME << "s\n" << endl;
         }
