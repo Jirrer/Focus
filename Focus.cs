@@ -42,7 +42,7 @@ namespace Focus
         private async void RunButton_Click(object sender, EventArgs e)
         {
             process = new Process();
-            process.StartInfo.FileName = @"..\src\timer.exe";
+            process.StartInfo.FileName = @"src\timer.exe";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardInput = true;
