@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows.Forms;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Drawing;
 
 namespace Focus
 {
@@ -19,8 +20,13 @@ namespace Focus
             this.Width = 800;
             this.Height = 500;
 
-            runButton = new Button { Left = 280, Top = 10, Width = 80, Text = "Start Timer" };
-            endButton = new Button { Left = 370, Top = 10, Width = 80, Text = "End Timer" };
+            this.MinimumSize = new Size(800, 500);
+            this.MaximumSize = new Size(800, 500);
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+
+            runButton = new Button { Left = 260, Top = 8, Width = 110, Height = 30, Text = "Start Timer" };
+            endButton = new Button { Left = 370, Top = 8, Width = 110, Height = 30, Text = "End Timer" };
             outputTextBox = new RichTextBox
             {
                 Left = 10,
@@ -28,8 +34,14 @@ namespace Focus
                 Width = 760,
                 Height = 420,
                 ReadOnly = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right // ← this line makes it resizable
             };
+
+            runButton.Font = new Font("Calibri Light", 14);
+            endButton.Font = new Font("Calibri Light", 14);
+            outputTextBox.Font = new Font("Calibri Light", 28);
+
+            outputTextBox.Text = "--------- Click Start to Begin Timer ---------";
+            outputTextBox.CenterText();
 
             runButton.Click += RunButton_Click;
             endButton.Click += endButton_Click;
@@ -38,6 +50,7 @@ namespace Focus
             this.Controls.Add(endButton);
             this.Controls.Add(outputTextBox);
         }
+
 
         private async void RunButton_Click(object sender, EventArgs e)
         {
@@ -50,8 +63,6 @@ namespace Focus
 
             process.Start();
 
-
-
             // Buffer for lines
             var linesBuffer = new System.Collections.Concurrent.ConcurrentQueue<string>();
             var updateTimer = new System.Windows.Forms.Timer { Interval = 100 };
@@ -59,14 +70,9 @@ namespace Focus
             {
                 while (linesBuffer.TryDequeue(out var line))
                 {
-                    outputTextBox.AppendText(line + Environment.NewLine);
-                    outputTextBox.SelectionStart = outputTextBox.Text.Length;
-                    outputTextBox.ScrollToCaret();
-                    // Limit to last 500 lines
-                    if (outputTextBox.Lines.Length > 500)
-                    {
-                        outputTextBox.Lines = outputTextBox.Lines.Skip(outputTextBox.Lines.Length - 500).ToArray();
-                    }
+                    outputTextBox.Text = line;
+                    outputTextBox.CenterText();
+
                 }
             };
             updateTimer.Start();
@@ -91,7 +97,7 @@ namespace Focus
                 try
                 {
                     process.Kill();
-                    outputTextBox.AppendText("Process terminated." + Environment.NewLine);
+                    outputTextBox.Text = " ";
                 }
                 catch (Exception ex)
                 {
@@ -105,6 +111,16 @@ namespace Focus
         {
             Application.EnableVisualStyles();
             Application.Run(new Focus()); // ← fixed
+        }
+    }
+    
+
+public static class RichTextBoxExtensions
+    {
+        public static void CenterText(this RichTextBox box)
+        {
+            box.SelectAll();
+            box.SelectionAlignment = HorizontalAlignment.Center;
         }
     }
 }

@@ -7,13 +7,14 @@
 #include <atomic>
 #include <deque>
 #include <algorithm>
+#include <iomanip>
 
 using namespace std;
 
 int IDLE_TIME = 0;
 int TIMER_TIME = 0;
-int IDLE_THRESHOLD = 90; // 90
-int TIMER_THRESHOLD = 1200; // 1200
+int IDLE_THRESHOLD = 90; // 90 (s)
+int TIMER_THRESHOLD = 1200; // 1200 (s)
 int GPU_RANGED_0_30 = 1;
 
 PROCESS_INFORMATION pi;
@@ -124,10 +125,7 @@ void playTimer() {
     Beep(900, 300);
     Beep(900, 300);
     cout << "----------------- Timer Done -----------------" << endl;
-    cout << "\n restart timer" << endl;
 
-    string temp;
-    getline(cin, temp);
     resetTimer();
 }
 
@@ -166,6 +164,14 @@ BOOL WINAPI ConsoleHandler(DWORD signal) {
     return FALSE; 
 }
 
+int getMinutes(int seconds) {
+    return seconds / 60;
+}
+
+int getSeconds(int seconds) {
+    return seconds % 60;
+}
+
 int main() {
     cout << "Running Timer cpp File" << endl;
 
@@ -186,10 +192,19 @@ int main() {
 
         {
             lock_guard<mutex> lock(coutMutex);
-            cout << "Current GPU Usage: " << gpuUsage << "%" << endl;
-            cout << "GPU Count: " << GPU_RANGED_0_30 << endl;
-            cout << "Idle Time: " << IDLE_TIME << "s" << endl;
-            cout << "Running Time: " << TIMER_TIME << "s\n" << endl;
+            int secondsRemaining = TIMER_THRESHOLD - TIMER_TIME;
+
+            if (secondsRemaining < 1) { playTimer(); break; }
+
+
+            cout << getMinutes(secondsRemaining) << " : ";
+            if (getSeconds(secondsRemaining) < 10) {
+                cout << "0" << getSeconds(secondsRemaining) << " Remaining" << endl;
+            }
+
+            else {
+                cout << getSeconds(secondsRemaining) << " Remaining" << endl;
+            }
         }
 
         this_thread::sleep_for(chrono::seconds(1));
