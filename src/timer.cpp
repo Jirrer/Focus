@@ -110,8 +110,6 @@ void checkIdle() {
     if (GPU_RANGED_0_30 < 20) {
         GPU_running = false;
     }
-    
-
 
     if (GPU_running || IDLE_TIME <= IDLE_THRESHOLD) { ++TIMER_TIME; }
     else {TIMER_TIME = 0; }
@@ -124,7 +122,7 @@ void resetTimer() {
 void playTimer() {
     Beep(900, 300);
     Beep(900, 300);
-    cout << "----------------- Timer Done -----------------" << endl;
+    cout << "----- Timer Done -----" << endl;
 
     resetTimer();
 }
@@ -188,22 +186,19 @@ int main() {
     while (true) {
         checkIdle();
 
-        int gpuUsage = getLatestGPUUsage();
-
         {
             lock_guard<mutex> lock(coutMutex);
             int secondsRemaining = TIMER_THRESHOLD - TIMER_TIME;
 
             if (secondsRemaining < 1) { playTimer(); break; }
 
-
-            cout << getMinutes(secondsRemaining) << " : ";
+            cout << "----- " << getMinutes(secondsRemaining) << " : ";
             if (getSeconds(secondsRemaining) < 10) {
-                cout << "0" << getSeconds(secondsRemaining) << " Remaining" << endl;
+                cout << "0" << getSeconds(secondsRemaining) << " Remaining -----" << endl;
             }
 
             else {
-                cout << getSeconds(secondsRemaining) << " Remaining" << endl;
+                cout << getSeconds(secondsRemaining) << " Remaining -----" << endl;
             }
         }
 

@@ -7,8 +7,10 @@ using System.Drawing;
 
 namespace Focus
 {
+
     public class Focus : Form
     {
+        static bool timerRunning = false;
         Button runButton;
         Button endButton;
         RichTextBox outputTextBox;
@@ -17,22 +19,22 @@ namespace Focus
         public Focus()
         {
             this.Text = "Focus";
-            this.Width = 800;
-            this.Height = 500;
+            this.Width = 590;
+            this.Height = 320;
 
-            this.MinimumSize = new Size(800, 500);
-            this.MaximumSize = new Size(800, 500);
+            this.MinimumSize = new Size(590, 320);
+            this.MaximumSize = new Size(590, 320);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
 
-            runButton = new Button { Left = 260, Top = 8, Width = 110, Height = 30, Text = "Start Timer" };
-            endButton = new Button { Left = 370, Top = 8, Width = 110, Height = 30, Text = "End Timer" };
+            runButton = new Button { Left = 10, Top = 8, Width = 280, Height = 100, Text = "Start Timer" };
+            endButton = new Button { Left = 290, Top = 8, Width = 280, Height = 100, Text = "End Timer" };
             outputTextBox = new RichTextBox
             {
                 Left = 10,
-                Top = 40,
-                Width = 760,
-                Height = 420,
+                Top = 110,
+                Width = 560,
+                Height = 195,
                 ReadOnly = true,
             };
 
@@ -40,7 +42,7 @@ namespace Focus
             endButton.Font = new Font("Calibri Light", 14);
             outputTextBox.Font = new Font("Calibri Light", 28);
 
-            outputTextBox.Text = "--------- Click Start to Begin Timer ---------";
+            outputTextBox.Text = "----- Click Start to Begin Timer -----";
             outputTextBox.CenterText();
 
             runButton.Click += RunButton_Click;
@@ -49,11 +51,15 @@ namespace Focus
             this.Controls.Add(runButton);
             this.Controls.Add(endButton);
             this.Controls.Add(outputTextBox);
+
+            this.FormClosing += Focus_FormClosing;
         }
 
 
-        private async void RunButton_Click(object sender, EventArgs e)
-        {
+        private async void RunButton_Click(object sender, EventArgs e) {
+            if (timerRunning) { return; }
+            timerRunning = true;
+
             process = new Process();
             process.StartInfo.FileName = @"src\timer.exe";
             process.StartInfo.UseShellExecute = false;
@@ -90,8 +96,9 @@ namespace Focus
             updateTimer.Stop();
         }
 
-        private void endButton_Click(object sender, EventArgs e)
-        {
+        private void endButton_Click(object sender, EventArgs e) {
+            timerRunning = false;
+
             if (process != null && !process.HasExited)
             {
                 try
@@ -103,6 +110,18 @@ namespace Focus
                 {
                     outputTextBox.AppendText("Error terminating process: " + ex.Message + Environment.NewLine);
                 }
+            }
+        }
+
+        private void Focus_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (process != null && !process.HasExited)
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch { /* Ignore errors if already exited */ }
             }
         }
 
@@ -119,6 +138,18 @@ public static class RichTextBoxExtensions
     {
         public static void CenterText(this RichTextBox box)
         {
+
+            int totalLines = box.Height / box.Font.Height;
+            int textLines = box.Lines.Length;
+            int paddingLines = Math.Max(0, (totalLines - textLines) / 2);
+
+            if (paddingLines > 0)
+            {
+                var lines = box.Lines.ToList();
+                lines.InsertRange(0, Enumerable.Repeat(string.Empty, paddingLines));
+                box.Lines = lines.ToArray();
+            }
+
             box.SelectAll();
             box.SelectionAlignment = HorizontalAlignment.Center;
         }
