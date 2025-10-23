@@ -1,5 +1,3 @@
-# <center>Focus
-
 ## Installer
 [⬇️ Download Installer]()
 
@@ -11,7 +9,6 @@ Focus also monitors GPU usage to determine if inactivity is due to passive activ
 ## How to use it
 To use Focus, set your desired work session duration in the app’s main interface and press “Start.” The timer will begin counting down. If you are inactive for an extended period, Focus will pause automatically unless it detects ongoing GPU activity (e.g., video playback). When the timer reaches zero, a notification will prompt you to take a break.
 
-# <center>Documentation
 ## Tech Stack
 | Tech | Use|
 |-|-|
