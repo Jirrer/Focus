@@ -1,0 +1,10 @@
+C:\Projects\Focus_v2\Focus\bin\Debug\Focus.exe.config
+C:\Projects\Focus_v2\Focus\bin\Debug\Focus.exe
+C:\Projects\Focus_v2\Focus\bin\Debug\Focus.pdb
+C:\Projects\Focus_v2\Focus\obj\Debug\Focus.csproj.AssemblyReference.cache
+C:\Projects\Focus_v2\Focus\obj\Debug\Focus.Form1.resources
+C:\Projects\Focus_v2\Focus\obj\Debug\Focus.Properties.Resources.resources
+C:\Projects\Focus_v2\Focus\obj\Debug\Focus.csproj.GenerateResource.cache
+C:\Projects\Focus_v2\Focus\obj\Debug\Focus.csproj.CoreCompileInputs.cache
+C:\Projects\Focus_v2\Focus\obj\Debug\Focus.exe
+C:\Projects\Focus_v2\Focus\obj\Debug\Focus.pdb
