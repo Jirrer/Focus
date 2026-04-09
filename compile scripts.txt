@@ -1,1 +1,0 @@
-csc /t:winexe /out:Focus.exe /win32icon:icons/icon.ico Focus.cs
