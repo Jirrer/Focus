@@ -3,3 +3,10 @@
 /env
 /build
 /dist
+.env
+*.txt
+*.spec
+*.joblib
+*.csv
+
+!requirements.txt
