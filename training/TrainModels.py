@@ -1,13 +1,11 @@
 import pandas as pd
-import joblib, sys, os
+import joblib, sys
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-from dotenv import load_dotenv
 
-load_dotenv()
 
 def buildModel(filePath: str):
     df = pd.read_csv(filePath)
@@ -30,7 +28,7 @@ def buildModel(filePath: str):
     predictions = model.predict(X_test)
     print(classification_report(y_test, predictions))
 
-    joblib.dump(model, str(os.getenv('WINDOW_TITLE_CLASSIFIER')))
+    joblib.dump('classifiers\\window_title_classifier.joblib') 
 
 if __name__ == "__main__": # To-Do: add label verification and normalizer
     if len(sys.argv) != 2:

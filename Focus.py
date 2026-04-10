@@ -1,15 +1,53 @@
-import time, pywinctl, joblib, os
-from dotenv import load_dotenv
+import time
+from pathlib import Path
+import pywinctl
 from datetime import datetime
 from enum import Enum
 from idle_time import IdleMonitor
 
-load_dotenv()
+try:
+    import joblib
+except Exception:
+    joblib = None
+
 
 # To-Do: model can learn from other assemenst (if final outcome is coding then train that checkWorkingWindow to be coding)
 # To-Do: maybe move assessments to another file
 
-workingWindowClassifier = joblib.load(str(os.getenv('WINDOW_TITLE_CLASSIFIER'))) 
+MODEL_PATHS = (
+    Path(__file__).resolve().parent.parent / 'classifiers' / 'window_title_classifier.joblib',
+    Path.cwd() / 'classifiers' / 'window_title_classifier.joblib',
+)
+
+# Lightweight fallback so runtime does not require sklearn artifacts.
+WORKING_WINDOW_KEYWORDS = (
+    'visual studio code',
+    'vscode',
+    'github',
+    'gitlab',
+    'bitbucket',
+    'stack overflow',
+    'jetbrains',
+    'pycharm',
+    'intellij',
+)
+
+
+def load_working_window_classifier():
+    if joblib is None:
+        return None
+
+    for model_path in MODEL_PATHS:
+        if model_path.exists():
+            try:
+                return joblib.load(model_path)
+            except Exception:
+                return None
+
+    return None
+
+
+workingWindowClassifier = load_working_window_classifier()
 
 class Action(Enum):
     CODING = 'Coding'
@@ -42,7 +80,7 @@ def main():
         for a in assessments:
             if a() == True: break # Confident in decisgn
 
-        # log(f'User is {STATUS.value}', datetime.now())
+        log(f'User is {STATUS.value}', datetime.now())
 
         time.sleep(loopTime)
 
@@ -55,14 +93,28 @@ def log(action: str, timestamp: datetime):
         print(f'Failed log: {e}')
 
 def checkWorkingWindow() -> bool:
-    activeWindowTitle = pywinctl.getActiveWindowTitle()
+    activeWindowTitle = pywinctl.getActiveWindowTitle() or ''
+    normalizedTitle = normalize(activeWindowTitle)
 
-    result = workingWindowClassifier.predict([activeWindowTitle])
+    if workingWindowClassifier is not None:
+        try:
+            result = workingWindowClassifier.predict([activeWindowTitle])
 
-    match (result[0]):
-        case 'other': updateStatus(Action.OTHER); return False
-        case 'coding': updateStatus(Action.CODING); return True
-        case _: updateStatus(Action.OTHER); return False
+            match (result[0]):
+                case 'other': updateStatus(Action.OTHER); return False
+                case 'coding': updateStatus(Action.CODING); return True
+                case _: updateStatus(Action.OTHER); return False
+        except Exception:
+            pass
+
+    isWorkingWindow = any(keyword in normalizedTitle for keyword in WORKING_WINDOW_KEYWORDS)
+
+    if isWorkingWindow:
+        updateStatus(Action.CODING)
+        return True
+
+    updateStatus(Action.OTHER)
+    return False
 
 def takeScreenShot() -> bool:
     
