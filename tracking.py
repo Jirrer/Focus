@@ -13,6 +13,7 @@ class Action(Enum):
     CODING = 'Coding'
     STUDYING = 'Studying'
     AFK = 'AFK'
+    PLAYBACK = 'Playback'
     OTHER = 'Other'
 
 STATUS = Action.OTHER
@@ -44,6 +45,15 @@ def main():
 
         time.sleep(loopTime)
 
+def idleTime() -> bool:
+    monitor = IdleMonitor.get_monitor()
+
+    if monitor.get_idle_time() > 30.00: updateStatus(Action.AFK)
+    elif STATUS == Action.AFK: updateStatus(Action.OTHER)
+
+    return False
+    
+
 def log(action: str, timestamp: datetime):
     try:
         with open('logs.txt', 'a', newline='') as file: 
@@ -57,23 +67,22 @@ def checkWorkingWindow() -> bool:
 
     result = workingWindowClassifier.predict([activeWindowTitle])
 
-    match (result[0]):
-        case 'other': updateStatus(Action.OTHER); return False
-        case 'coding': updateStatus(Action.CODING); return True
-        case _: updateStatus(Action.OTHER); return False
+    if STATUS == Action.AFK and result == Action.PLAYBACK.value:    
+        updateStatus(Action.PLAYBACK)
+        return False
+    
+    elif STATUS == Action.AFK:
+        return True
+
+    else:
+        match (result[0]):
+            case 'other': updateStatus(Action.OTHER); return False
+            case 'coding': updateStatus(Action.CODING); return True
+            case _: updateStatus(Action.OTHER); return False
 
 def takeScreenShot() -> bool:
     
     return False
-
-def idleTime() -> bool:
-    monitor = IdleMonitor.get_monitor()
-
-    if monitor.get_idle_time() < 30.00: return False
-    
-    updateStatus(Action.AFK)
-    
-    return True
 
 
 if __name__ == "__main__":
